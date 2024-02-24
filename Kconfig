@@ -1,0 +1,39 @@
+# Sensor data simulator
+#
+# Copyright (c) 2019 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menuconfig ANALOG_INPUT
+	bool "ANALOG_INPUT adc sensor"
+  select ADC
+	help
+	  Enable ANALOG_INPUT adc sensor.
+
+if ANALOG_INPUT
+
+config ANALOG_INPUT_WORKQUEUE_PRIORITY
+    int "Workqueue priority"
+    default 10
+    help
+      Priority of thread used by the workqueue
+
+config ANALOG_INPUT_WORKQUEUE_STACK_SIZE
+    int "Workqueue stack size"
+    default 1024
+    help
+      Stack size of thread used by the workqueue
+
+config ANALOG_INPUT_REPORT_INTERVAL_MIN
+	int "ANALOG_INPUT's default minimum report rate"
+	default 0
+	help
+	  Default minimum report interval in milliseconds.
+		Slow down input reporting for hid queue over the air.
+
+module = ANALOG_INPUT
+module-str = ANALOG_INPUT
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif #ANALOG_INPUT

@@ -1,0 +1,44 @@
+# Copyright (c) 2022 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+description: |
+  Input driver for ADC io channel
+
+compatible: "zmk,analog-input"
+
+properties:
+  sampling-hz:
+    type: int
+    default: 100
+  input-channel:
+    type: int
+    default: 0
+
+child-binding:
+  description: Per-channel configuration settings
+  properties:
+    io-channels:
+      type: phandle-array
+      required: true
+    mv-mid:
+      type: int
+      required: true
+    mv-min-max:
+      type: int
+      required: true
+    mv-deadzone:
+      type: int
+      default: 10
+    invert:
+      type: boolean
+    scale-multiplier:
+      type: int
+      default: 1
+    scale-divisor:
+      type: int
+      default: 70
+    evt-type:
+      type: int
+      required: true
+    input-code:
+      type: int
+      required: true

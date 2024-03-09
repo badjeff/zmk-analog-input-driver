@@ -26,6 +26,10 @@ extern "C" {
 struct analog_input_data {
     const struct device *dev;
     struct adc_sequence as;
+#if CONFIG_ADC_ASYNC
+    struct k_poll_signal async_sig;
+    struct k_poll_event async_evt;
+#endif
     uint16_t *as_buff;
     int32_t *delta;
     struct k_work_delayable init_work;

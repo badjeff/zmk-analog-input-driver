@@ -40,17 +40,35 @@ static int analog_input_report_data(const struct device *dev) {
         const struct device* adc = ch_cfg.adc_channel.dev;
 
         if (i == 0) {
+#ifdef CONFIG_ADC_ASYNC
+            int err = adc_read_async(adc, as, &data->async_sig);
+            if (err < 0) {
+                LOG_ERR("AIN%u read_async returned %d", i, err);
+                return err;
+            }
+            err = k_poll(&data->async_evt, 1, K_FOREVER);
+            if (err < 0) {
+                LOG_ERR("AIN%u k_poll returned %d", i, err);
+                return err;
+            }
+            if (!data->async_evt.signal->signaled) {
+                return 0;
+            }
+            data->async_evt.signal->signaled = 0;
+    	    data->async_evt.state = K_POLL_STATE_NOT_READY;
+#else
             int err = adc_read(adc, as);
             if (err < 0) {
                 LOG_ERR("AIN%u read returned %d", i, err);
                 return err;
             }
+#endif
         }
 
         int32_t raw = data->as_buff[i];
         int32_t mv = raw;
         adc_raw_to_millivolts(adc_ref_internal(adc), ADC_GAIN_1_6, as->resolution, &mv);
-        LOG_DBG("AIN%u raw: %d mv: %d", ch_cfg.adc_channel.channel_id, raw, mv);
+        // LOG_DBG("AIN%u raw: %d mv: %d", ch_cfg.adc_channel.channel_id, raw, mv);
 
         int16_t v = mv - ch_cfg.mv_mid;
         int16_t dz = ch_cfg.mv_deadzone;
@@ -170,6 +188,11 @@ static void analog_input_async_init(struct k_work *work) {
 
         ch_mask |= BIT(channel_id);
 
+        if (!device_is_ready(adc)) {
+            LOG_ERR("AIN%u device is not ready %s", i, adc->name);
+            continue;
+        }
+
         int err = adc_channel_setup(adc, &channel_cfg);
         if (err < 0) {
             LOG_ERR("AIN%u setup returned %d", i, err);
@@ -192,6 +215,14 @@ static void analog_input_async_init(struct k_work *work) {
         .resolution = 12,
         .calibrate = true,
     };
+
+#ifdef CONFIG_ADC_ASYNC
+    k_poll_signal_init(&data->async_sig);
+    struct k_poll_event async_evt = K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL,
+                                                             K_POLL_MODE_NOTIFY_ONLY,
+                                                             &data->async_sig);
+    data->async_evt = async_evt;
+#endif
 
     data->ready = true;
 

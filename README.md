@@ -75,6 +75,11 @@ Now enable the driver config in your `<shield>.config` file (read the Kconfig fi
 ```conf
 # Enable Analog Input
 CONFIG_ADC=y
+CONFIG_ADC_ASYNC=y
+# ** NOTES** CONFIG_ADC_ASYNC=y is required,
+#            if zmk,battery-voltage-divider is chosen for zmk,battery.
+
+# Enable Analog Input Module
 CONFIG_ANALOG_INPUT=y
 # CONFIG_ANALOG_INPUT_LOG_LEVEL_DBG=y
 # CONFIG_ANALOG_INPUT_REPORT_INTERVAL_MIN=22

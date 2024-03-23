@@ -253,29 +253,7 @@ static int analog_input_init(const struct device *dev) {
     return err;
 }
 
-static int analog_input_attr_get(const struct device *dev, enum sensor_channel chan,
-                                 enum sensor_attribute attr, struct sensor_value *val)
-{
-    const struct analog_input_config *config = dev->config;
-	int ret = 0;
-    if ((int)chan == (int)ANALOG_INPUT_CHAN_DRIVER_CONFIG) { // aka SENSOR_CHAN_PRIV_START
-        switch (attr) {
-        case ANALOG_INPUT_ATTR_INTPUT_CHANNEL: // aka SENSOR_ATTR_PRIV_START
-            val->val1 = config->input_channel;
-            break;
-        default:
-            LOG_ERR("ANALOG_INPUT attribute not supported.");
-            return -ENOTSUP;
-        }
-    } else {
-        LOG_ERR("ANALOG_INPUT attribute not supported.");
-        return -ENOTSUP;
-    }
-	return ret;
-}
-
 static const struct sensor_driver_api analog_input_driver_api = {
-	.attr_get = analog_input_attr_get,
 };
 
 #define TRANSFORMED_IO_CHANNEL_ENTRY(node_id)                                                      \
@@ -298,7 +276,6 @@ static const struct sensor_driver_api analog_input_driver_api = {
     };                                                                                             \
     static const struct analog_input_config config##n = {                                          \
         .sampling_hz = DT_PROP(DT_DRV_INST(n), sampling_hz),                                       \
-        .input_channel = DT_PROP(DT_DRV_INST(n), input_channel),                                   \
         .io_channels_len = (DT_FOREACH_CHILD(DT_DRV_INST(n), ANIN_IOC_CHILD_LEN_PLUS_ONE) 0),      \
         .io_channels = { DT_INST_FOREACH_CHILD_SEP(n, TRANSFORMED_IO_CHANNEL_ENTRY, (, )) },       \
     };                                                                                             \

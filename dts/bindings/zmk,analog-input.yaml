@@ -9,9 +9,6 @@ properties:
   sampling-hz:
     type: int
     default: 100
-  input-channel:
-    type: int
-    default: 0
 
 child-binding:
   description: Per-channel configuration settings

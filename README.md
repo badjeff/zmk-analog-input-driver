@@ -43,7 +43,6 @@ Now, update your `board.overlay` adding the necessary bits (update the pins for 
 	anin0: analog_input_0 {
 		compatible = "zmk,analog-input";
 		sampling-hz = <100>;
-		input-channel = <201>;
 		x-ch {
 			io-channels = <&adc 2>;
 			mv-mid = <1630>;

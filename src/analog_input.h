@@ -54,17 +54,8 @@ struct io_channel {
 
 struct analog_input_config {
     uint32_t sampling_hz;
-    uint8_t input_channel;
     uint8_t io_channels_len;
 	struct io_channel io_channels[];
-};
-
-enum analog_input_channel {
-	ANALOG_INPUT_CHAN_DRIVER_CONFIG = SENSOR_CHAN_PRIV_START,
-};
-
-enum analog_input_attribute {
-	ANALOG_INPUT_ATTR_INTPUT_CHANNEL = SENSOR_ATTR_PRIV_START,
 };
 
 #ifdef __cplusplus

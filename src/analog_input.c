@@ -179,11 +179,13 @@ static void analog_input_async_init(struct k_work *work) {
             .reference = ADC_REF_INTERNAL,
             .acquisition_time = ADC_ACQ_TIME_DEFAULT,
             .channel_id = channel_id,
-            #ifdef CONFIG_ADC_NRFX_SAADC
-            .input_positive = SAADC_CH_PSELP_PSELP_AnalogInput0 + channel_id,
-            #else
-            .input_positive = channel_id,
-            #endif
+            #ifdef CONFIG_ADC_CONFIGURABLE_INPUTS
+                #ifdef CONFIG_ADC_NRFX_SAADC
+                    .input_positive = SAADC_CH_PSELP_PSELP_AnalogInput0 + channel_id,
+                #else /* CONFIG_ADC_NRFX_SAADC */
+                    .input_positive = channel_id,
+                #endif /* CONFIG_ADC_NRFX_SAADC */
+            #endif /* CONFIG_ADC_CONFIGURABLE_INPUTS */
         };
 
         ch_mask |= BIT(channel_id);

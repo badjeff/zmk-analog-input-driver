@@ -32,6 +32,12 @@ config ANALOG_INPUT_REPORT_INTERVAL_MIN
 	  Default minimum report interval in milliseconds.
 		Slow down input reporting for hid queue over the air.
 
+config ANALOG_INPUT_LOG_DBG_RAW
+	bool "ANALOG_INPUT debug log for RAW mV"
+
+config ANALOG_INPUT_LOG_DBG_REPORT
+	bool "ANALOG_INPUT debug log for REPORT value"
+
 module = ANALOG_INPUT
 module-str = ANALOG_INPUT
 source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"

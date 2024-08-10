@@ -68,7 +68,9 @@ static int analog_input_report_data(const struct device *dev) {
         int32_t raw = data->as_buff[i];
         int32_t mv = raw;
         adc_raw_to_millivolts(adc_ref_internal(adc), ADC_GAIN_1_6, as->resolution, &mv);
-        // LOG_DBG("AIN%u raw: %d mv: %d", ch_cfg.adc_channel.channel_id, raw, mv);
+#if IS_ENABLED(CONFIG_ANALOG_INPUT_LOG_DBG_RAW)
+        LOG_DBG("AIN%u raw: %d mv: %d", ch_cfg.adc_channel.channel_id, raw, mv);
+#endif
 
         int16_t v = mv - ch_cfg.mv_mid;
         int16_t dz = ch_cfg.mv_deadzone;
@@ -135,7 +137,9 @@ static int analog_input_report_data(const struct device *dev) {
             last_rpt_time = now;
 #endif
             data->delta[i] = 0;
+#if IS_ENABLED(CONFIG_ANALOG_INPUT_LOG_DBG_REPORT)
             LOG_DBG("input_report %u rv: %d  e:%d  c:%d", i, dv, ch_cfg.evt_type, ch_cfg.input_code);
+#endif
             input_report(dev, ch_cfg.evt_type, ch_cfg.input_code, dv, i == idx_to_sync, K_NO_WAIT);
         }
     }

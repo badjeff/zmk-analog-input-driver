@@ -67,6 +67,11 @@ Now, update your `board.overlay` adding the necessary bits (update the pins for 
 			invert;
 			evt-type = <INPUT_EV_REL>;
 			input-code = <INPUT_REL_Y>;
+
+			/* enable report mdoe for gamepad axix or knob */
+			/* to only call input_report on quantquantized value is updated */
+			report-on-change-only;
+
 		};
 	};
 };

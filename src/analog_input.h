@@ -32,6 +32,7 @@ struct analog_input_data {
 #endif
     uint16_t *as_buff;
     int32_t *delta;
+    int32_t *prev;
     struct k_work_delayable init_work;
     int async_init_step;
     bool ready;
@@ -46,6 +47,7 @@ struct io_channel {
     uint16_t mv_min_max;
     uint8_t mv_deadzone;
     bool invert;
+    bool report_on_change_only;
     uint16_t scale_multiplier;
     uint16_t scale_divisor;
     uint8_t evt_type;

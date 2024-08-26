@@ -27,6 +27,8 @@ child-binding:
       default: 10
     invert:
       type: boolean
+    report-on-change-only:
+      type: boolean
     scale-multiplier:
       type: int
       default: 1

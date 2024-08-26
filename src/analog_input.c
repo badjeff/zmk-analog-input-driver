@@ -91,11 +91,16 @@ static int analog_input_report_data(const struct device *dev) {
         if (ch_cfg.invert) v *= -1;
         v = (int16_t)((v * ch_cfg.scale_multiplier) / ch_cfg.scale_divisor);
 
-        // accumulate delta until report in next iteration
-        int32_t delta = data->delta[i];
-        int32_t dv = delta + v;
-
-        data->delta[i] = dv;
+        if (ch_cfg.report_on_change_only) {
+            // track raw value to compare until next report interval
+            data->delta[i] = v;
+        }
+        else {
+            // accumulate delta until report in next iteration
+            int32_t delta = data->delta[i];
+            int32_t dv = delta + v;
+            data->delta[i] = dv;
+        }
     }
 
     // First read is setup as calibration
@@ -106,6 +111,7 @@ static int analog_input_report_data(const struct device *dev) {
     if (now - last_smp_time >= CONFIG_ANALOG_INPUT_REPORT_INTERVAL_MIN) {
         for (uint8_t i = 0; i < config->io_channels_len; i++) {
             data->delta[i] = 0;
+            data->prev[i] = 0;
         }
     }
     last_smp_time = now;
@@ -114,7 +120,6 @@ static int analog_input_report_data(const struct device *dev) {
 #if CONFIG_ANALOG_INPUT_REPORT_INTERVAL_MIN > 0
     // strict to report inerval
     if (now - last_rpt_time < CONFIG_ANALOG_INPUT_REPORT_INTERVAL_MIN) {
-
         return 0;
     }
 #endif
@@ -122,7 +127,8 @@ static int analog_input_report_data(const struct device *dev) {
     int8_t idx_to_sync = -1;
     for (uint8_t i = config->io_channels_len - 1; i >= 0; i--) {
         int32_t dv = data->delta[i];
-        if (dv != 0) {
+        int32_t pv = data->prev[i];
+        if (dv != pv) {
             idx_to_sync = i;
             break;
         }
@@ -132,11 +138,15 @@ static int analog_input_report_data(const struct device *dev) {
         struct io_channel ch_cfg = (struct io_channel)config->io_channels[i];
         // LOG_DBG("AIN%u get delta AGAIN", i);
         int32_t dv = data->delta[i];
-        if (dv != 0) {
+        int32_t pv = data->prev[i];
+        if (dv != pv) {
 #if CONFIG_ANALOG_INPUT_REPORT_INTERVAL_MIN > 0
             last_rpt_time = now;
 #endif
             data->delta[i] = 0;
+            if (ch_cfg.report_on_change_only) {
+                data->prev[i] = dv;
+            }
 #if IS_ENABLED(CONFIG_ANALOG_INPUT_LOG_DBG_REPORT)
             LOG_DBG("input_report %u rv: %d  e:%d  c:%d", i, dv, ch_cfg.evt_type, ch_cfg.input_code);
 #endif
@@ -209,6 +219,10 @@ static void analog_input_async_init(struct k_work *work) {
     data->delta = malloc(delta_size);
     memset(data->delta, 0, delta_size);
 
+    uint16_t prev_size = config->io_channels_len * sizeof(int32_t);
+    data->prev = malloc(prev_size);
+    memset(data->prev, 0, prev_size);
+
     uint16_t buff_size = config->io_channels_len * sizeof(uint16_t);
     data->as_buff = malloc(buff_size);
     memset(data->as_buff, 0, buff_size);
@@ -269,6 +283,7 @@ static const struct sensor_driver_api analog_input_driver_api = {
         .mv_min_max = DT_PROP(node_id, mv_min_max),                                                \
         .mv_deadzone = DT_PROP(node_id, mv_deadzone),                                              \
         .invert = DT_PROP(node_id, invert),                                                        \
+        .report_on_change_only = DT_PROP(node_id, report_on_change_only),                          \
         .scale_multiplier = DT_PROP(node_id, scale_multiplier),                                    \
         .scale_divisor = DT_PROP(node_id, scale_divisor),                                          \
         .evt_type = DT_PROP(node_id, evt_type),                                                    \

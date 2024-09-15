@@ -36,12 +36,17 @@ struct analog_input_data {
     struct k_work_delayable init_work;
     int async_init_step;
     bool ready;
+
+    uint32_t sampling_hz;
+    bool enabled;
+    bool actived;
+
     struct k_work sampling_work;
     struct k_timer sampling_timer;
     int err;
 };
 
-struct io_channel { 
+struct analog_input_io_channel { 
 	struct adc_dt_spec adc_channel;
     uint16_t mv_mid;
     uint16_t mv_min_max;
@@ -57,7 +62,27 @@ struct io_channel {
 struct analog_input_config {
     uint32_t sampling_hz;
     uint8_t io_channels_len;
-	struct io_channel io_channels[];
+	struct analog_input_io_channel io_channels[];
+};
+
+/* Helper macros used to convert sensor values. */
+#define ANALOG_INPUT_SVALUE_TO_SAMPLING_HZ(svalue) ((uint32_t)(svalue).val1)
+#define ANALOG_INPUT_SVALUE_TO_ENABLE(svalue) ((uint32_t)(svalue).val1)
+#define ANALOG_INPUT_SVALUE_TO_ACTIVE(svalue) ((uint32_t)(svalue).val1)
+
+/** @brief Sensor specific attributes of ANALOG_INPUT. */
+enum analog_input_attribute {
+
+    // setup polling timer
+    ANALOG_INPUT_ATTR_SAMPLING_HZ,
+
+    // ENABLE sampling timer
+	ANALOG_INPUT_ATTR_ENABLE,
+
+    // ACTIVE input reporting
+    // or else, manually call sample_fetch & channel_get via sensor api.
+	ANALOG_INPUT_ATTR_ACTIVE,
+
 };
 
 #ifdef __cplusplus

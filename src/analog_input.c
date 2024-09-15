@@ -16,7 +16,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(ANALOG_INPUT, CONFIG_ANALOG_INPUT_LOG_LEVEL);
 
-#include "analog_input.h"
+#include <zmk/drivers/analog_input.h>
 
 static int analog_input_report_data(const struct device *dev) {
     struct analog_input_data *data = dev->data;
@@ -36,7 +36,7 @@ static int analog_input_report_data(const struct device *dev) {
     struct adc_sequence* as = &data->as;
 
     for (uint8_t i = 0; i < config->io_channels_len; i++) {
-        struct io_channel ch_cfg = (struct io_channel)config->io_channels[i];
+        struct analog_input_io_channel ch_cfg = (struct analog_input_io_channel)config->io_channels[i];
         const struct device* adc = ch_cfg.adc_channel.dev;
 
         if (i == 0) {
@@ -124,6 +124,10 @@ static int analog_input_report_data(const struct device *dev) {
     }
 #endif
 
+    if (!data->actived) {
+        return 0;
+    }
+
     int8_t idx_to_sync = -1;
     for (uint8_t i = config->io_channels_len - 1; i >= 0; i--) {
         int32_t dv = data->delta[i];
@@ -135,7 +139,7 @@ static int analog_input_report_data(const struct device *dev) {
     }
 
     for (uint8_t i = 0; i < config->io_channels_len; i++) {
-        struct io_channel ch_cfg = (struct io_channel)config->io_channels[i];
+        struct analog_input_io_channel ch_cfg = (struct analog_input_io_channel)config->io_channels[i];
         // LOG_DBG("AIN%u get delta AGAIN", i);
         int32_t dv = data->delta[i];
         int32_t pv = data->prev[i];
@@ -147,6 +151,7 @@ static int analog_input_report_data(const struct device *dev) {
             if (ch_cfg.report_on_change_only) {
                 data->prev[i] = dv;
             }
+
 #if IS_ENABLED(CONFIG_ANALOG_INPUT_LOG_DBG_REPORT)
             LOG_DBG("input_report %u rv: %d  e:%d  c:%d", i, dv, ch_cfg.evt_type, ch_cfg.input_code);
 #endif
@@ -173,6 +178,63 @@ static void sampling_timer_handler(struct k_timer *timer) {
     k_work_submit(&data->sampling_work);
 }
 
+static int active_set_value(const struct device *dev, bool active) {
+    struct analog_input_data *data = dev->data;
+    if (data->actived == active) return 0;
+    LOG_DBG("%d", active ? 1 : 0);
+    data->actived = active;
+    return 0;
+}
+
+static int sample_hz_set_value(const struct device *dev, uint32_t hz) {
+    struct analog_input_data *data = dev->data;
+
+    if (unlikely(!data->ready)) {
+        LOG_DBG("Device is not initialized yet");
+        return -EBUSY;
+    }
+
+    if (data->enabled) {
+        LOG_DBG("Device is busy, would not update sampleing rate in enable state.");
+        return -EBUSY;
+    }
+
+    LOG_DBG("%d", hz);
+    data->sampling_hz = hz;
+    return 0;
+}
+
+static int enable_set_value(const struct device *dev, bool enable) {
+    struct analog_input_data *data = dev->data;
+    // const struct tb6612fng_config *config = dev->config;
+
+    if (unlikely(!data->ready)) {
+        LOG_DBG("Device is not initialized yet");
+        return -EBUSY;
+    }
+
+    if (data->enabled == enable) {
+        return 0;
+    }
+    
+    LOG_DBG("%d", enable ? 1 : 0);
+    if (enable) {
+        if (data->sampling_hz != 0) {
+            uint32_t usec = 1000000UL / data->sampling_hz;
+            k_timer_start(&data->sampling_timer, K_USEC(usec), K_USEC(usec));
+        } else {
+            k_timer_start(&data->sampling_timer, K_NO_WAIT, K_NO_WAIT);
+        }
+        data->enabled = true;
+    }
+    else {
+        k_timer_stop(&data->sampling_timer);
+        data->enabled = false;
+    }
+
+    return 0;
+}
+
 static void analog_input_async_init(struct k_work *work) {
     struct k_work_delayable *work_delayable = (struct k_work_delayable *)work;
     struct analog_input_data *data = CONTAINER_OF(work_delayable, 
@@ -184,7 +246,7 @@ static void analog_input_async_init(struct k_work *work) {
     uint32_t ch_mask = 0;
 
     for (uint8_t i = 0; i < config->io_channels_len; i++) {
-        struct io_channel ch_cfg = (struct io_channel)config->io_channels[i];
+        struct analog_input_io_channel ch_cfg = (struct analog_input_io_channel)config->io_channels[i];
         const struct device* adc = ch_cfg.adc_channel.dev;
         uint8_t channel_id = ch_cfg.adc_channel.channel_id;
         
@@ -252,11 +314,11 @@ static void analog_input_async_init(struct k_work *work) {
                         CONFIG_ANALOG_INPUT_WORKQUEUE_PRIORITY, NULL);
 
     k_timer_init(&data->sampling_timer, sampling_timer_handler, NULL);
-    if (config->sampling_hz != 0) {
-        uint32_t usec = 1000000UL / config->sampling_hz;
-        k_timer_start(&data->sampling_timer, K_USEC(usec), K_USEC(usec));
-    } else {
-        k_timer_start(&data->sampling_timer, K_NO_WAIT, K_NO_WAIT);
+
+    sample_hz_set_value(dev, config->sampling_hz);
+    active_set_value(dev, true);
+    if (data->sampling_hz) {
+        enable_set_value(dev, true);
     }
 
 }
@@ -273,7 +335,94 @@ static int analog_input_init(const struct device *dev) {
     return err;
 }
 
+static int analog_input_attr_set(const struct device *dev, enum sensor_channel chan,
+                            enum sensor_attribute attr, const struct sensor_value *val) {
+    struct analog_input_data *data = dev->data;
+    // const struct analog_input_config *config = dev->config;
+    int err;
+
+    if (chan != SENSOR_CHAN_ALL) {
+        LOG_DBG("Selected channel is not supported: %d.", chan);
+        return -ENOTSUP;
+    }
+    if (unlikely(!data->ready)) {
+        LOG_DBG("Device is not initialized yet");
+        return -EBUSY;
+    }
+
+    switch ((uint32_t)attr) {
+    case ANALOG_INPUT_ATTR_SAMPLING_HZ:
+        err = sample_hz_set_value(dev, ANALOG_INPUT_SVALUE_TO_SAMPLING_HZ(*val));
+        break;
+
+    case ANALOG_INPUT_ATTR_ENABLE:
+        err = enable_set_value(dev, ANALOG_INPUT_SVALUE_TO_ENABLE(*val));
+        break;
+
+    case ANALOG_INPUT_ATTR_ACTIVE:
+        err = active_set_value(dev, ANALOG_INPUT_SVALUE_TO_ACTIVE(*val));
+        break;
+
+    default:
+        LOG_ERR("Unknown attribute");
+        err = -ENOTSUP;
+    }
+
+    return err;
+}
+
+static int analog_input_sample_fetch(const struct device *dev, enum sensor_channel chan) {
+    struct analog_input_data *data = dev->data;
+    // const struct analog_input_config *config = dev->config;
+
+    if (chan != SENSOR_CHAN_ALL) {
+        LOG_DBG("Selected channel is not supported: %d.", chan);
+        return -ENOTSUP;
+    }
+    if (unlikely(!data->ready)) {
+        LOG_DBG("Device is not initialized yet");
+        return -EBUSY;
+    }
+
+    int err = analog_input_report_data(data->dev);
+    if (err < 0) {
+        LOG_ERR("analog_input_report_data returned %d", err);
+        return err;
+    }
+
+    return 0;
+}
+
+static int analog_input_channel_get(const struct device *dev, enum sensor_channel chan,
+                                    struct sensor_value *val) {
+    struct analog_input_data *data = dev->data;
+    const struct analog_input_config *config = dev->config;
+
+    if (unlikely(chan != SENSOR_CHAN_ALL)) {
+        LOG_DBG("Selected channel is not supported: %d.", chan);
+        return -ENOTSUP;
+    }
+    if (unlikely(!data->ready)) {
+        LOG_DBG("Device is not initialized yet");
+        return -EBUSY;
+    }
+
+    for (uint8_t i = 0; i < config->io_channels_len; i++) {
+        struct analog_input_io_channel ch_cfg = (struct analog_input_io_channel)config->io_channels[i];
+        if (!ch_cfg.report_on_change_only) {
+            continue;
+        }
+        if (i == 0)      val->val1 = data->delta[i];
+        else if (i == 1) val->val2 = data->delta[i];
+    }
+
+    return 0;
+}
+
 static const struct sensor_driver_api analog_input_driver_api = {
+    .attr_set = analog_input_attr_set,
+    .sample_fetch = analog_input_sample_fetch,
+    .channel_get = analog_input_channel_get,
 };
 
 #define TRANSFORMED_IO_CHANNEL_ENTRY(node_id)                                                      \

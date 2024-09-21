@@ -22,21 +22,8 @@ manifest:
 Now, update your `board.overlay` adding the necessary bits (update the pins for your board accordingly):
 
 ```dts
-#define INPUT_EV_KEY 0x01               /**< Key event */
-#define INPUT_EV_REL 0x02               /**< Relative coordinate event */
-#define INPUT_EV_ABS 0x03               /**< Absolute coordinate event */
-#define INPUT_EV_MSC 0x04               /**< Miscellaneous event */
-#define INPUT_EV_VENDOR_START 0xf0      /**< Vendor specific event start */
-#define INPUT_EV_VENDOR_STOP 0xff       /**< Vendor specific event stop */
-
-#define INPUT_REL_X 0x00                /**< Relative X coordinate */
-#define INPUT_REL_Y 0x01                /**< Relative Y coordinate */
-#define INPUT_REL_WHEEL 0x08            /**< Relative wheel coordinate */
-#define INPUT_REL_HWHEEL 0x06           /**< Relative horizontal wheel coordinate */
-#define INPUT_REL_MISC 0x09             /**< Relative misc coordinate */
-/* See more input event types at:
-   https://docs.zephyrproject.org/apidoc/latest/group__input__events.html
-*/
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+/* Reference: https://docs.zephyrproject.org/apidoc/latest/group__input__events.html */
 
 &adc {
 	status = "okay";

@@ -10,12 +10,19 @@ Include this project on your ZMK's west manifest in `config/west.yml`:
 
 ```yml
 manifest:
-  ...
+  remotes:
+		...
+    # START #####
+    - name: badjeff
+      url-base: https://github.com/badjeff
+    # END #######
   projects:
     ...
+    # START #####
     - name: zmk-analog-input-driver
       remote: badjeff
       revision: main
+    # END #######
     ...
 ```
 

@@ -11,7 +11,7 @@ Include this project on your ZMK's west manifest in `config/west.yml`:
 ```yml
 manifest:
   remotes:
-		...
+    ...
     # START #####
     - name: badjeff
       url-base: https://github.com/badjeff
@@ -92,5 +92,7 @@ CONFIG_ANALOG_INPUT_LOG_DBG_REPORT=y
 
 ## Troubleshooting
 
-If you are running on nrf52840 board and analog reading get stuck after some moment, you need to ground all `uint8_t adc_sequence::oversampling` to zero in your ZMK branch in respect to `oversampling` setting is unsupported by given ADC hardware in a specific mode. [Reference](https://docs.zephyrproject.org/apidoc/latest/structadc__sequence.html#a233e8b20b57bb2fdbebf2c85f076c802)
+If you are running on nrf52840 board and analog reading get stuck after some moment, you need to ground all `uint8_t adc_sequence::oversampling` to zero in your ZMK branch in respect to `oversampling` setting is unsupported by given ADC hardware in a specific mode. [Reference](https://docs.zephyrproject.org/apidoc/latest/structadc__sequence.html#a233e8b20b57bb2fdbebf2c85f076c802).
+
+TL;DR: Set oversampling to zero at [here](https://github.com/zmkfirmware/zmk/blob/461f5c832fb8854d87dca54d113d306323697219/app/module/drivers/sensor/battery/battery_nrf_vddh.c#L90) in your zmk fork to use this module.
 

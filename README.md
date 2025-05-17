@@ -88,6 +88,8 @@ CONFIG_ANALOG_INPUT=y
 CONFIG_ANALOG_INPUT_LOG_DBG_RAW=y
 CONFIG_ANALOG_INPUT_LOG_DBG_REPORT=y
 
+# Just in case, you don't RTFM
+CONFIG_INPUT=y
 ```
 
 ## Troubleshooting

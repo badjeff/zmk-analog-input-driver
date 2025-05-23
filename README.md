@@ -2,6 +2,9 @@
 
 This driver groups ADC io channels into single input event for input subsystem. It provides config for thumbstick input with mid-point alignment, min-mav limitation, deadzone, sampling rate, reporting rate, multiplier, divisor, invertor, etc.
 
+> [!CAUTION]
+> This poll mode driver has relativley high power consumption, its not recommended for wireless builds.
+
 ## Installation
 
 Only GitHub actions builds are covered here. Local builds are different for each user, therefore it's not possible to cover all cases.
@@ -64,6 +67,7 @@ Now, update your `board.overlay` adding the necessary bits (update the pins for 
 
 			/* enable report mdoe for gamepad axix or knob */
 			/* to only call input_report on quantquantized value is updated */
+			/* NOTE: mouse input does NOT need this */
 			report-on-change-only;
 
 		};

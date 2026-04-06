@@ -13,6 +13,20 @@ menuconfig ANALOG_INPUT
 
 if ANALOG_INPUT
 
+config ANALOG_INPUT_USE_DTS_ADC_CH_CFG
+		bool "Use per adc channel config from device tree"
+		help
+			Enable this to passthrow adc channel to chanel setup, 
+			otherwise use default favor.
+			(ADC_GAIN_1_6, ADC_REF_INTERNAL, ADC_ACQ_TIME_DEFAULT)
+
+config ANALOG_INPUT_ADC_RES
+		int "ADC Channels Resolution (Bit)"
+		default 12
+		help
+			Resolution of ADC Channel. Default 12 bit, up to 32 bit.
+			Used to setup buffer size of ADC sequencer of all channels.
+
 config ANALOG_INPUT_WORKQUEUE_PRIORITY
     int "Workqueue priority"
     default 10

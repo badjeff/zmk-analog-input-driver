@@ -250,6 +250,9 @@ static void analog_input_async_init(struct k_work *work) {
         const struct device* adc = ch_cfg.adc_channel.dev;
         uint8_t channel_id = ch_cfg.adc_channel.channel_id;
         
+#if CONFIG_ANALOG_INPUT_USE_DTS_ADC_CH_CFG
+        struct adc_channel_cfg channel_cfg = ch_cfg.adc_channel.channel_cfg;
+#else
         struct adc_channel_cfg channel_cfg = {
             .gain = ADC_GAIN_1_6,
             .reference = ADC_REF_INTERNAL,
@@ -263,6 +266,7 @@ static void analog_input_async_init(struct k_work *work) {
                 #endif /* CONFIG_ADC_NRFX_SAADC */
             #endif /* CONFIG_ADC_CONFIGURABLE_INPUTS */
         };
+#endif
 
         ch_mask |= BIT(channel_id);
 
@@ -285,7 +289,11 @@ static void analog_input_async_init(struct k_work *work) {
     data->prev = malloc(prev_size);
     memset(data->prev, 0, prev_size);
 
+#if CONFIG_ANALOG_INPUT_ADC_RES > 16
+    uint16_t buff_size = config->io_channels_len * sizeof(uint32_t);
+#else
     uint16_t buff_size = config->io_channels_len * sizeof(uint16_t);
+#endif
     data->as_buff = malloc(buff_size);
     memset(data->as_buff, 0, buff_size);
 
@@ -294,7 +302,7 @@ static void analog_input_async_init(struct k_work *work) {
         .buffer = data->as_buff,
         .buffer_size = buff_size,
         .oversampling = 0,
-        .resolution = 12,
+        .resolution = CONFIG_ANALOG_INPUT_ADC_RES,
         .calibrate = true,
     };
 

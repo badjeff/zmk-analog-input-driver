@@ -94,6 +94,19 @@ CONFIG_ANALOG_INPUT_LOG_DBG_REPORT=y
 
 # Just in case, you don't RTFM
 CONFIG_INPUT=y
+
+# ↓↓↓↓ Advence Settings ↓↓↓↓
+
+# Enable using explicit ADC channels config from device tree
+# - default to false
+# - It allows composited channel to be used. e.g. differential with +/-vRef.
+CONFIG_ANALOG_INPUT_USE_DTS_ADC_CH_CFG=n
+
+# ADC channels resolution (in bit)
+# - default to 12 bit
+# - With above CONFIG_ANALOG_INPUT_USE_DTS_ADC_CH_CFG=y, it might need this 
+#   to enlarge buffer of ADC sequencer for 24bit hi-res ADC.
+ANALOG_INPUT_ADC_RES=12
 ```
 
 ## Troubleshooting

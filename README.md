@@ -3,7 +3,7 @@
 This driver groups ADC io channels into single input event for input subsystem. It provides config for thumbstick input with mid-point alignment, min-mav limitation, deadzone, sampling rate, reporting rate, multiplier, divisor, invertor, etc.
 
 > [!CAUTION]
-> This poll mode driver has relativley high power consumption, its not recommended for wireless builds. There is a new forked module [analog-axis-hires-input-zephyr-module](https://github.com/badjeff/analog-axis-hires-input-zephyr-module) of upstream `analog-axis` input driver. It supports new polling downshift and switable power rail via GPIOs for wireless builds. But, it still needs to apply the change mentioned in troubleshooting section on below.
+> This poll mode driver has relativley high power consumption, its not recommended for wireless builds. There is a new forked module [analog-axis-hires-input-zephyr-module](https://github.com/badjeff/analog-axis-hires-input-zephyr-module) of upstream `analog-axis` input driver. It supports new polling downshift and switchable power rail via GPIOs for wireless builds. But, it still needs to apply the change mentioned in troubleshooting section on below.
 
 ## Installation
 
